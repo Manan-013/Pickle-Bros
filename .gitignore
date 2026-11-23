@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.log
+
+# Raw source models (20-65 MB each). The game loads the optimized heads in client/public/characters,
+# built from these by tools/build-characters.mjs.
+/Babita.glb
+/modi_tour_guide_rigged.glb
+/salman_khan_guide.stl
+/trump real.glb
+
+# Local tooling
+.claude/
+.env
+.env.*
