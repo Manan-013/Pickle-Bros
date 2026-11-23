@@ -1,0 +1,971 @@
+:root {
+  --panel: rgba(12, 20, 34, 0.72);
+  --text: #f4f7fb;
+  --muted: #a9b6c8;
+  --accent: #e6f53c;
+  --good: #5ee38a;
+  --bad: #ff6b6b;
+  --warn: #ffb547;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0e1726;
+  color: var(--text);
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Per-view visibility. */
+.hud:not([data-view='practice']) .practice-only,
+.hud:not([data-view='match']) .match-only,
+.hud[data-view='menu'] .play-only {
+  display: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.panel {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 10px 14px;
+  backdrop-filter: blur(6px);
+}
+
+.label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Practice streak panel. */
+.score {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+}
+
+.mode {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.stats {
+  display: flex;
+  gap: 18px;
+}
+
+.stats .value {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Match scoreboard. */
+.board {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  min-width: 190px;
+}
+
+.board .call {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.board .call .label {
+  display: inline;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.board .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.board .name {
+  flex: 1;
+  font-size: 15px;
+}
+
+.board .pts {
+  font-size: 24px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.serve-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.row.serving .serve-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Big centre message with a smaller sub-line. */
+.msg {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  text-align: center;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+  white-space: nowrap;
+}
+
+.msg .main {
+  font-size: clamp(28px, 6vw, 56px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.msg .sub {
+  font-size: clamp(14px, 2.4vw, 20px);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.msg.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.msg.good .main {
+  color: var(--good);
+}
+
+.msg.bad .main {
+  color: var(--bad);
+}
+
+.msg.info .main {
+  color: var(--accent);
+  font-size: clamp(18px, 3.5vw, 30px);
+}
+
+/* Contact rating flash. */
+.rating {
+  position: absolute;
+  bottom: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  transition: opacity 0.12s;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.rating.show {
+  opacity: 1;
+}
+
+.rating.perfect {
+  color: var(--good);
+}
+
+.rating.good {
+  color: var(--accent);
+}
+
+.rating.stretch {
+  color: var(--warn);
+}
+
+.rating .over {
+  color: var(--bad);
+}
+
+/* Power bar while a click is held. */
+.charge {
+  position: absolute;
+  bottom: 176px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(220px, 60vw);
+  height: 16px;
+  border-radius: 999px;
+  background: var(--panel);
+  overflow: hidden;
+  display: none;
+}
+
+.charge.show {
+  display: block;
+}
+
+.charge .fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #5ee38a, var(--accent));
+}
+
+.charge.over .fill {
+  background: var(--bad);
+}
+
+.charge .label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #10161f;
+  mix-blend-mode: normal;
+}
+
+.prompt,
+.badge {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  display: none;
+}
+
+.prompt {
+  bottom: 96px;
+  font-size: 15px;
+}
+
+.badge {
+  top: 16px;
+  font-size: 13px;
+  color: var(--warn);
+  border: 1px solid var(--warn);
+}
+
+.prompt.show,
+.badge.show {
+  display: block;
+}
+
+/* Shot chips. */
+.shots {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.chip {
+  background: var(--panel);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition:
+    border-color 0.12s,
+    transform 0.12s;
+}
+
+.chip.active {
+  border-color: var(--shot, var(--accent));
+  transform: translateY(-3px);
+}
+
+.chip.active kbd {
+  background: var(--shot, var(--accent));
+  color: #10161f;
+}
+
+kbd {
+  font-family: inherit;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.help {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  right: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Menu and game-over overlays. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 14, 26, 0.45);
+  pointer-events: auto;
+  padding: 16px;
+}
+
+.card {
+  background: rgba(12, 20, 34, 0.88);
+  border-radius: 18px;
+  padding: 28px 28px 22px;
+  width: min(360px, 100%);
+  box-sizing: border-box;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.card h1 {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.card h1 span {
+  color: var(--accent);
+}
+
+.card h1.win {
+  color: var(--good);
+}
+
+.card h1.lose {
+  color: var(--bad);
+}
+
+.card p {
+  margin: 4px 0 20px;
+  color: var(--muted);
+}
+
+.card p.final {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.card button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #10161f;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    filter 0.1s;
+}
+
+.card button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.card button small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.card button.secondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+.levels {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.levels-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.card .levels button {
+  flex: 1;
+  margin-top: 0;
+  padding: 8px 6px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.card .levels button.active {
+  background: var(--text);
+  color: #10161f;
+}
+
+.card button.toggle {
+  margin-top: 18px;
+  font-size: 15px;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+}
+
+.chip {
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.1;
+}
+
+.chip kbd {
+  font-weight: 500;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .chip {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .board {
+    min-width: 150px;
+  }
+}
+
+/* ---------------------------------------------------------------- online screens */
+
+.online .overlay {
+  z-index: 5;
+}
+
+.card .field {
+  display: block;
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.card input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.card input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.card .divider {
+  margin: 16px 0 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.card .join-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.card .join-row input {
+  margin-top: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-align: center;
+  font-weight: 800;
+}
+
+.card .join-row button {
+  width: auto;
+  padding: 0 18px;
+}
+
+.card .status {
+  min-height: 1.2em;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+.card button:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+  filter: none;
+}
+
+.lobby .small-label {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.lobby .room-code {
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  user-select: all;
+}
+
+.lobby .copy {
+  margin-top: 4px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  padding: 8px;
+}
+
+.lobby .settings {
+  margin-bottom: 10px;
+}
+
+.lobby .teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  text-align: left;
+}
+
+.lobby .team-name {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.lobby .seat {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.lobby .seat.mine {
+  outline: 2px solid var(--accent);
+}
+
+.lobby .seat .cpu {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.card .seat button.sit {
+  margin-top: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+@media (max-width: 420px) {
+  .lobby .teams {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card .rooms {
+  max-height: 180px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.card .rooms .empty {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.card .room-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.card .room-row > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.card .room-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.card .room-row button {
+  width: auto;
+  margin: 0;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+
+.online .card {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+/* ---------------------------------------------------------------- power mode */
+
+.power-panel {
+  position: absolute;
+  left: 16px;
+  bottom: 44px;
+  width: 190px;
+  transition: box-shadow 0.15s;
+}
+
+.power-panel.armed {
+  box-shadow: 0 0 0 2px var(--accent), 0 0 18px rgba(230, 245, 60, 0.45);
+}
+
+.power-panel .power-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.power-panel .power-top .label {
+  display: inline;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.power-panel .combo {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.power-panel .bars {
+  display: flex;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.power-panel .bar {
+  flex: 1;
+  height: 12px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.power-panel .bar .fill {
+  height: 100%;
+  width: 0;
+  background: #5fb4ff;
+}
+
+.power-panel .bar.full .fill {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.power-panel .armed {
+  min-height: 1.2em;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.board .pips {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.callout {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(30px, 7vw, 64px);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 18px currentColor, 0 4px 14px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.callout.show {
+  animation: callout 1.2s ease-out forwards;
+}
+
+@keyframes callout {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+  12% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(1); }
+}
+
+@media (max-width: 520px) {
+  .power-panel {
+    bottom: 96px;
+    width: 160px;
+  }
+}
+
+/* ---------------------------------------------------------------- characters */
+
+.card .chars {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 4px 0 4px;
+}
+
+.card .chars button.char {
+  margin: 0;
+  padding: 8px 2px 6px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border: 2px solid transparent;
+  border-radius: 10px;
+}
+
+.card .chars button.char.active {
+  border-color: var(--accent);
+  background: rgba(230, 245, 60, 0.12);
+}
+
+.card .chars .swatch {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0 auto 4px;
+  border-radius: 50%;
+  background: var(--char);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.card .chars strong {
+  display: block;
+  font-size: 12px;
+}
+
+.card .chars small {
+  font-size: 10px;
+}
+
+.card .char-info {
+  margin: 2px 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 420px) {
+  .card .chars {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Tall menus scroll on small screens. */
+.overlay .card {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+/* ---------------------------------------------------------------- courts */
+
+.card .levels.courts {
+  flex-wrap: wrap;
+}
+
+.card .levels.courts button {
+  flex: 1 0 28%;
+  font-size: 13px;
+  padding: 7px 4px;
+}
+
+.wind {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wind.show {
+  display: flex;
+}
+
+.wind .arrow {
+  display: inline-block;
+  font-size: 18px;
+  color: #7fd3ff;
+  transition: transform 0.4s;
+}
+
+/* ---------------------------------------------------------------- TV-style score bug */
+
+.panel.board {
+  padding: 0;
+  min-width: 250px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(14, 20, 34, 0.94), rgba(6, 10, 20, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+.board .call {
+  margin: 0;
+  padding: 6px 12px;
+  gap: 8px;
+  background: rgba(230, 245, 60, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+}
+
+.board .call .label {
+  color: var(--accent);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.board .call .live {
+  margin-right: auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #e5303a;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.board .row {
+  padding: 5px 12px 5px 0;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.board .row:last-child {
+  border-bottom: 0;
+}
+
+.board .row.serving {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.board .team-chip {
+  align-self: stretch;
+  width: 6px;
+}
+
+.board .team-chip.t0 {
+  background: #ff7a1a;
+}
+
+.board .team-chip.t1 {
+  background: #7b61ff;
+}
+
+.board .name {
+  font-weight: 700;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board .pts {
+  min-width: 38px;
+  text-align: center;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 26px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 0 6px;
+}
+
+.board .row.serving .pts {
+  background: var(--accent);
+  color: #10161f;
+}
+
+/* Narrower windows: keep the power meter clear of the shot buttons. */
+@media (max-width: 1000px) {
+  .power-panel {
+    bottom: 100px;
+  }
+}
