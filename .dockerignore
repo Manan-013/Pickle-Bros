@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+client/dist
+.git
+.claude
+*.log
+# Large source models aren't used by the game build yet.
+*.glb
+*.stl

@@ -1,0 +1,29 @@
+# Fly.io settings. `fly launch` fills in the app name and the region nearest you.
+app = "picklebros"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Rooms live in the server's memory, so run exactly one machine (deploy with --ha=false).
+  # It stops when nobody is connected (saves cost) and starts again on the next visit.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
